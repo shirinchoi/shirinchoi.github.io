@@ -412,7 +412,7 @@
   
     <footer>
     <span>© 2026 Shirin Choi</span>
-    <span><a href="/cdn-cgi/l/email-protection#5526363d3a3c64631520227b303120"><span class="__cf_email__" data-cfemail="4330202b2c2a72750336346d262736">[email&#160;protected]</span></a></span>
+    <span><a href="mailto:schoi16@uw.edu">schoi16@uw.edu</a></span>
   </footer>
 
   <!-- Lightbox -->
@@ -430,7 +430,7 @@
     </div>
   </div>
 
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  <script>
     const cards = Array.from(document.querySelectorAll('.card'));
     const lightbox = document.getElementById('lightbox');
     const lbImg = document.getElementById('lightbox-img');
@@ -489,4 +489,13 @@
     document.getElementById('lightbox-next').addEventListener('click', () => navigate(1));
 
     document.addEventListener('keydown', e => {
+      if (!lightbox.classList.contains('active')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') navigate(-1);
+      if (e.key === 'ArrowRight') navigate(1);
+    });
+  </script>
+
+</body>
+</html>
   
