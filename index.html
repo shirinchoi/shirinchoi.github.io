@@ -230,6 +230,106 @@
       .card-overlay { opacity: 1; }
       .card-title, .card-sub { transform: translateY(0); }
     }
+
+    /* ── Lightbox ── */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    .lightbox.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .lightbox-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 10, 10, 0.88);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .lightbox-content {
+      position: relative;
+      z-index: 1;
+      max-width: 90vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      transform: scale(0.94) translateY(12px);
+      transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .lightbox.active .lightbox-content {
+      transform: scale(1) translateY(0);
+    }
+    .lightbox-img {
+      max-width: 90vw;
+      max-height: 80vh;
+      object-fit: contain;
+      border-radius: 3px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+      display: block;
+    }
+    .lightbox-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 300;
+      color: #fff;
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+    .lightbox-year {
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      margin-top: 4px;
+      text-align: center;
+    }
+    .lightbox-close {
+      position: fixed;
+      top: 24px;
+      right: 28px;
+      z-index: 1002;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.6);
+      font-size: 1.6rem;
+      line-height: 1;
+      padding: 8px;
+      transition: color 0.2s, transform 0.2s;
+    }
+    .lightbox-close:hover { color: #fff; transform: rotate(90deg); }
+    .lightbox-nav {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1002;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.7);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: background 0.2s, color 0.2s;
+    }
+    .lightbox-nav:hover { background: rgba(255,255,255,0.18); color: #fff; }
+    .lightbox-prev { left: 20px; }
+    .lightbox-next { right: 20px; }
+    .card { cursor: zoom-in; }
   </style>
 </head>
 <body>
@@ -245,9 +345,9 @@
       <!-- Card 1 -->
       <div class="card">
         <!-- Replace the div below with: <img class="card-img" src="your-image.jpg" alt="Project title"> -->
-        <img class="card-img" src="resources/67.jpg" alt="still life oil painting 1">
+        <img class="card-img" src="resources/67.jpg" alt="still life oil painting">
         <div class="card-overlay">
-          <div class="card-title">still life oil painting 1</div>
+          <div class="card-title">still life oil painting</div>
           <div class="card-sub">2026</div>
         </div>
       </div>
@@ -255,9 +355,9 @@
       <!-- Card 2 -->
       <div class="card">
         <!-- Replace the div below with: <img class="card-img" src="your-image.jpg" alt="Project title"> -->
-        <img class="card-img" src="resources/1.jpg" alt="still life oil painting 2">
+        <img class="card-img" src="resources/1.jpg" alt="still life oil painting">
         <div class="card-overlay">
-          <div class="card-title">still life oil painting 1</div>
+          <div class="card-title">still life oil painting</div>
           <div class="card-sub">2026</div>
         </div>
       </div>
@@ -310,10 +410,91 @@
     </div>
   </main>
   
-  <footer>
+    <footer>
     <span>© 2026 Shirin Choi</span>
     <span><a href="mailto:schoi16@uw.edu">schoi16@uw.edu</a></span>
   </footer>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+    <div class="lightbox-backdrop" id="lightbox-backdrop"></div>
+    <button class="lightbox-close" id="lightbox-close" aria-label="Close">&#x2715;</button>
+    <button class="lightbox-nav lightbox-prev" id="lightbox-prev" aria-label="Previous">&#8592;</button>
+    <button class="lightbox-nav lightbox-next" id="lightbox-next" aria-label="Next">&#8594;</button>
+    <div class="lightbox-content">
+      <img class="lightbox-img" id="lightbox-img" src="" alt="" />
+      <div class="lightbox-meta">
+        <div class="lightbox-title" id="lightbox-title"></div>
+        <div class="lightbox-year" id="lightbox-year"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const cards = Array.from(document.querySelectorAll('.card'));
+    const lightbox = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lightbox-img');
+    const lbTitle = document.getElementById('lightbox-title');
+    const lbYear = document.getElementById('lightbox-year');
+    let current = 0;
+
+    function getCardData(card) {
+      const img = card.querySelector('.card-img');
+      return {
+        src: img ? img.src : '',
+        alt: img ? img.alt : '',
+        title: card.querySelector('.card-title')?.textContent || '',
+        year: card.querySelector('.card-sub')?.textContent || '',
+      };
+    }
+
+    function openLightbox(index) {
+      current = index;
+      const data = getCardData(cards[current]);
+      lbImg.src = data.src;
+      lbImg.alt = data.alt;
+      lbTitle.textContent = data.title;
+      lbYear.textContent = data.year;
+      lightbox.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function navigate(dir) {
+      current = (current + dir + cards.length) % cards.length;
+      const data = getCardData(cards[current]);
+      lbImg.style.opacity = '0';
+      setTimeout(() => {
+        lbImg.src = data.src;
+        lbImg.alt = data.alt;
+        lbTitle.textContent = data.title;
+        lbYear.textContent = data.year;
+        lbImg.style.opacity = '1';
+      }, 150);
+    }
+
+    lbImg.style.transition = 'opacity 0.15s ease';
+
+    cards.forEach((card, i) => {
+      card.addEventListener('click', () => openLightbox(i));
+    });
+
+    document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+    document.getElementById('lightbox-backdrop').addEventListener('click', closeLightbox);
+    document.getElementById('lightbox-prev').addEventListener('click', () => navigate(-1));
+    document.getElementById('lightbox-next').addEventListener('click', () => navigate(1));
+
+    document.addEventListener('keydown', e => {
+      if (!lightbox.classList.contains('active')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') navigate(-1);
+      if (e.key === 'ArrowRight') navigate(1);
+    });
+  </script>
 
 </body>
 </html>
